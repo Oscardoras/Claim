@@ -1,0 +1,12 @@
+name: Claim
+version: "1.0.0"
+description: "A plugin to own claims and protect them."
+author: oscardoras
+main: org.bukkitplugin.claim.ClaimPlugin
+permissions:
+  claim:
+    default: op
+    children:
+      claim.ignore: true
+  claim.ignore:
+    default: op

@@ -1,0 +1,67 @@
+claim:
+  cannotbestolen:
+    en: "§cCette prétention ne peut pas être volé car son propriétaire possède suffisament de pouvoir"
+    fr: "§cThis claim can not be stolen because its owner has enough power"
+  doesnotexist:
+    en: "§cClaim '%arg%' not found"
+    fr: "§cPrétention \"%arg%\" non trouvée"
+  isnotowned:
+    en: "§cYou do not have this territory"
+    fr: "§cVous ne possédez pas ce territoire"
+  isnotprotected:
+    en: "§cThis claim is not protected"
+    fr: "§cCette prétention n'est pas protégée"
+  istoofar:
+    en: "§cThis territory is too far from a protected claim"
+    fr: "§cCe territoire est trop éloignée d'une prétention protégée"
+claimcmd:
+  claim:
+    en: "Claimed territory"
+    fr: "Territoire prétendu"
+  empty:
+    en: "You have no claims"
+    fr: "Vous n'avez pas de prétentions"
+  list:
+    en: "You have %list% protected claims:"
+    fr: "Vous avez %list% prétentions protégées :"
+  name:
+    get:
+      en: "The name of these protected claims is set to '%arg%'"
+      fr: "Le nom de ces prétentions protégées est défini sur \"%arg%\""
+    set:
+      en: "The name of these protected claims has been set to '%arg%'"
+      fr: "Le nom de ces prétentions protégées a été défini sur \"%arg%\""
+  rule:
+    remove:
+      en: "The claim rule %arg has been removed"
+      fr: "Le règle de prétention %arg% a été supprimée"
+    set:
+      en: "The claim rule %arg has been set to: %arg%"
+      fr: "Le règle de prétention %arg% a été défini sur : %arg%"
+  steal:
+    en: "Stolen claim"
+    fr: "Prétention volée"
+  protect:
+    en: "Protected claim"
+    fr: "Prétention protégée"
+  unclaim:
+    en: "Unclaimed territory"
+    fr: "Territoire non prétendu"
+  unprotect:
+    en: "Unprotected claim"
+    fr: "Prétention non protégée"
+ruletarget:
+  doesnotexist:
+    en: "§cTarget '%arg%' not found"
+    fr: "§cCible \"%arg%\" non trouvée"
+sender:
+  doesnothaveteam:
+    en: "§cYou are not part of any team"
+    fr: "§cVous ne faite parti d'aucune équipe"
+territory:
+  free:
+    en: "Free territory"
+    fr: "Territoire libre"
+  owner:
+    en: "Territory claimed by %arg%"
+    fr: "Territoire prétendu par %arg%"
