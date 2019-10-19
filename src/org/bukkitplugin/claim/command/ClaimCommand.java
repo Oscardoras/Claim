@@ -4,15 +4,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.permissions.Permission;
 import org.bukkit.scoreboard.Team;
-import org.bukkitplugin.claim.ClaimPlugin;
 import org.bukkitplugin.claim.Message;
 import org.bukkitplugin.claim.claimable.Claim;
 import org.bukkitplugin.claim.claimable.Claimable;
@@ -22,322 +21,290 @@ import org.bukkitplugin.claim.owner.Owner;
 import org.bukkitplugin.claim.owner.TeamOwner;
 import org.bukkitplugin.claim.rule.ClaimRule;
 import org.bukkitplugin.claim.rule.RuleTarget;
-import org.bukkitutils.command.CommandAPI;
-import org.bukkitutils.command.CommandExecutor;
-import org.bukkitutils.command.CommandMessage;
-import org.bukkitutils.command.arguments.Argument;
-import org.bukkitutils.command.arguments.BooleanArgument;
-import org.bukkitutils.command.arguments.DynamicSuggestedStringArgument;
-import org.bukkitutils.command.arguments.DynamicSuggestedStringArgument.DynamicSuggestionsWithCommandSender;
-import org.bukkitutils.command.arguments.LiteralArgument;
-import org.bukkitutils.command.arguments.TextArgument;
-import org.bukkitutils.io.Translate;
+import org.bukkitutils.command.v1_14_3_V1.Argument;
+import org.bukkitutils.command.v1_14_3_V1.CommandRegister;
+import org.bukkitutils.command.v1_14_3_V1.CommandRegister.CommandExecutorType;
+import org.bukkitutils.command.v1_14_3_V1.LiteralArgument;
+import org.bukkitutils.command.v1_14_3_V1.arguments.BooleanArgument;
+import org.bukkitutils.command.v1_14_3_V1.arguments.OfflinePlayerArgument;
+import org.bukkitutils.command.v1_14_3_V1.arguments.QuotedStringArgument;
+import org.bukkitutils.command.v1_14_3_V1.arguments.ScoreboardTeamArgument;
+import org.bukkitutils.io.Notification;
+
+import net.md_5.bungee.api.chat.TextComponent;
 
 public final class ClaimCommand {
 	private ClaimCommand() {}
 	
 	
-	private static void register(LinkedHashMap<String, Argument> arguments, ClaimCommandExecutor executor) {
-		CommandAPI.register("claim", arguments, new Permission("claim.command.claim"), new CommandExecutor() {
-			public int run(CommandSender sender, Object[] args) {
-				return executor.run(sender, new EntityOwner((Entity) sender), args);
-			}
+	private static void register(LinkedHashMap<String, Argument<?>> arguments, ClaimCommandRunnable runnable) {
+		CommandRegister.register("claim", arguments, new Permission("claim.command.claim"), CommandExecutorType.ENTITY, (cmd) -> {
+			return runnable.run(cmd, new EntityOwner((Entity) cmd.getExecutor()));
 		});
 		
-		LinkedHashMap<String, Argument> argu = new LinkedHashMap<>();
-		argu.put("claim_literal", new LiteralArgument("claim").withPermission(new Permission("claim.command.team.claim")));
-		CommandAPI.register("t", arguments, new Permission("claim.command.team"), new CommandExecutor() {
-			public int run(CommandSender sender, Object[] args) {
-				Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(sender.getName());
-				if (team != null) return executor.run(sender, new TeamOwner(team), args);
-				else {
-					CommandMessage.send(sender, new Message("sender.doesnothaveteam"));
-					return 0;
-				}
+		LinkedHashMap<String, Argument<?>> argu = new LinkedHashMap<>();
+		argu.put("claim_literal", new LiteralArgument("claim").withPermission(new Permission("claim.command.team")));
+		argu.putAll(arguments);
+		CommandRegister.register("t", argu, new Permission("team.command.team"), CommandExecutorType.ENTITY, (cmd) -> {
+			Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(cmd.getExecutor().getName());
+			if (team != null) return runnable.run(cmd, new TeamOwner(team));
+			else {
+				cmd.sendFailureMessage(new Message("sender.does_not_have_team"));
+				return 0;
 			}
 		});
 	}
 	
+	public static void sendNotification(Owner owner, Message message, String... args) {
+		if (owner instanceof EntityOwner) sendNotification((EntityOwner) owner, message, args);
+		else if (owner instanceof TeamOwner) Notification.send(((TeamOwner) owner).getTeam(), message, args);
+	}
 	
-	public final static DynamicSuggestedStringArgument offlinePlayers = new DynamicSuggestedStringArgument(new DynamicSuggestionsWithCommandSender() {
-		public String[] getSuggestions(CommandSender sender) {
-			List<String> list = new ArrayList<String>();
-			if (sender instanceof Entity)
-				for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers()) list.add(offlinePlayer.getName());
-			return list.toArray(new String[0]);
-		}
-	});
+	private static void sendNotification(EntityOwner owner, Message message, String... args) {
+		UUID uuid = ((EntityOwner) owner).getUUID();
+		Entity entity = Bukkit.getEntity(uuid);
+		if (entity != null) entity.sendMessage(message.getMessage(entity, args));
+		else Notification.send(Bukkit.getOfflinePlayer(uuid), message, args);
+	}
 	
-	public final static DynamicSuggestedStringArgument teams = new DynamicSuggestedStringArgument(new DynamicSuggestionsWithCommandSender() {
-		public String[] getSuggestions(CommandSender sender) {
-			List<String> list = new ArrayList<String>();
-			if (sender instanceof Entity)
-				for (Team team : Bukkit.getScoreboardManager().getMainScoreboard().getTeams()) list.add(team.getName());
-			return list.toArray(new String[0]);
-		}
-	});
 	
 	public static void list() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("list", new LiteralArgument("list").withPermission(new Permission("claim.command.claim.list")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				ArrayList<String> list = new ArrayList<String>();
-				for (ProtectedClaim protectedClaim : owner.getProtectedClaims()) {
-					String name = protectedClaim.getName();
-					if (!list.contains(name)) list.add(name);
-				}
-				CommandMessage.sendStringList(sender, list, new Message("claimcmd.list"), new Message("claimcmd.empty"));
-				return 1;
+		register(arguments, (cmd, owner) -> {
+			ArrayList<String> list = new ArrayList<String>();
+			for (ProtectedClaim protectedClaim : owner.getProtectedClaims()) {
+				String name = protectedClaim.getName();
+				if (!list.contains(name)) list.add(name);
 			}
+			cmd.sendListMessage(list, new Object[] {new Message("command.claim.list.list")}, new Object[] {new Message("command.claim.list.empty")});
+			return list.size();
 		});
 	}
 	
 	public static void claim() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("claim", new LiteralArgument("claim").withPermission(new Permission("claim.command.claim.claim")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
-					if (claimable.checkClaim(owner)) {
-						claimable.claim(owner);
-						CommandMessage.send(sender, new Message("claimcmd.claim"));
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.istoofar"));
-						return 0;
-					}
-				} else if (((Claim) claimable).canBeStolen()) {
-					if (claimable.checkClaim(owner)) {
-						claimable.claim(owner);
-						CommandMessage.send(sender, new Message("claimcmd.steal"));
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.istoofar"));
-						return 0;
-					}
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
+				if (claimable.checkClaim(owner)) {
+					claimable.claim(owner);
+					sendNotification(owner, new Message("command.claim.claim"));
+					return 1;
 				} else {
-					CommandMessage.send(sender, new Message("claim.cannotbestolen"));
+					cmd.sendFailureMessage(new Message("claim.is_too_far"));
 					return 0;
 				}
+			} else if (((Claim) claimable).canBeStolen() || cmd.hasPermission("claim.ignore")) {
+				if (claimable.checkClaim(owner)) {
+					claimable.claim(owner);
+					sendNotification(owner, new Message("command.claim.steal"));
+					return 1;
+				} else {
+					cmd.sendFailureMessage(new Message("claim.is_too_far"));
+					return 0;
+				}
+			} else {
+				cmd.sendFailureMessage(new Message("claim.can_not_be_stolen"));
+				return 0;
 			}
 		});
 	}
 	
 	public static void unclaim() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("unclaim", new LiteralArgument("unclaim").withPermission(new Permission("claim.command.claim.unclaim")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (claimable instanceof Claim) {
-					Claim claim = (Claim) claimable;
-					if (owner.equals(claim.getOwner())) {
-						claim.unClaim();
-						CommandMessage.send(sender, new Message("claimcmd.unclaim"));
-						return 1;
-					} else if (claim.getCoef() <= ClaimPlugin.plugin.coefs.steal) {
-						claim.unClaim();
-						CommandMessage.send(sender, new Message("claimcmd.steal"));
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.cannotbestolen"));
-						return 0;
-					}
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (claimable instanceof Claim) {
+				Claim claim = (Claim) claimable;
+				if (owner.equals(claim.getOwner())) {
+					claim.unClaim();
+					sendNotification(owner, new Message("command.claim.unclaim"));
+					return 1;
+				} else if (claim.canBeStolen() || cmd.hasPermission("claim.ignore")) {
+					claim.unClaim();
+					sendNotification(owner, new Message("command.claim.steal"));
+					return 1;
 				} else {
-					CommandMessage.send(sender, new Message("claim.isnotowned"));
+					cmd.sendFailureMessage(new Message("claim.can_not_be_stolen"));
 					return 0;
 				}
+			} else {
+				cmd.sendFailureMessage(new Message("claim.is_not_owned"));
+				return 0;
 			}
 		});
 	}
 	
 	public static void protect() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("protect", new LiteralArgument("protect").withPermission(new Permission("claim.command.claim.protect")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
-					claimable.protect(owner);
-					CommandMessage.send(sender, new Message("claimcmd.protect"));
-					return 1;
-				} else if (((Claim) claimable).canBeStolen()) {
-					claimable.protect(owner);
-					CommandMessage.send(sender, new Message("claimcmd.steal"));
-					return 1;
-				} else {
-					CommandMessage.send(sender, new Message("claim.cannotbestolen"));
-					return 0;
-				}
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
+				claimable.protect(owner);
+				sendNotification(owner, new Message("command.claim.protect"));
+				return 1;
+			} else if (((Claim) claimable).canBeStolen() || cmd.hasPermission("claim.ignore")) {
+				claimable.protect(owner);
+				sendNotification(owner, new Message("command.claim.steal"));
+				return 1;
+			} else {
+				cmd.sendFailureMessage(new Message("claim.can_not_be_stolen"));
+				return 0;
 			}
 		});
 	}
 	
 	public static void unprotect() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("unprotect", new LiteralArgument("unprotect").withPermission(new Permission("claim.command.claim.unprotect")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
-					if (claimable instanceof ProtectedClaim) {
-						((ProtectedClaim) claimable).unProtect();
-						CommandMessage.send(sender, new Message("claimcmd.unprotect"));
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.isnotprotected"));
-						return 0;
-					}
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
+				if (claimable instanceof ProtectedClaim) {
+					((ProtectedClaim) claimable).unProtect();
+					sendNotification(owner, new Message("command.claim.unprotect"));
+					return 1;
 				} else {
-					CommandMessage.send(sender, new Message("claim.isnotowned"));
+					cmd.sendFailureMessage(new Message("claim.is_not_protected"));
 					return 0;
 				}
+			} else {
+				cmd.sendFailureMessage(new Message("claim.is_not_owned"));
+				return 0;
 			}
 		});
 	}
 	
 	public static void name() {
-		LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
+		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("name_literal", new LiteralArgument("name").withPermission(new Permission("claim.command.claim.name")));
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
-					if (claimable instanceof ProtectedClaim) {
-						CommandMessage.send(sender, new Message("claim.name.get"), ((ProtectedClaim) claimable).getName());
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.isnotprotected"));
-						return 0;
-					}
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
+				if (claimable instanceof ProtectedClaim) {
+					cmd.sendMessage(new Message("command.claim.name.get", ((ProtectedClaim) claimable).getName()));
+					return 1;
 				} else {
-					CommandMessage.send(sender, new Message("claim.isnotowned"));
+					cmd.sendFailureMessage(new Message("claim.is_not_protected"));
 					return 0;
 				}
+			} else {
+				cmd.sendFailureMessage(new Message("claim.is_not_owned"));
+				return 0;
 			}
 		});
 		
 		arguments = new LinkedHashMap<>();
 		arguments.put("name_literal", new LiteralArgument("name").withPermission(new Permission("claim.command.claim.name")));
-		arguments.put("name", new TextArgument());
-		register(arguments, new ClaimCommandExecutor() {
-			public int run(CommandSender sender, Owner owner, Object[] args) {
-				Claimable claimable = Claimable.get(((Entity) sender).getLocation().getChunk());
-				if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
-					if (claimable instanceof ProtectedClaim) {
-						ProtectedClaim protectedClaim = (ProtectedClaim) claimable;
-						protectedClaim.setName((String) args[0]);
-						CommandMessage.send(sender, new Message("claim.name.set"), protectedClaim.getName());
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.isnotprotected"));
-						return 0;
-					}
+		arguments.put("name", new QuotedStringArgument());
+		register(arguments, (cmd, owner) -> {
+			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
+			if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
+				if (claimable instanceof ProtectedClaim) {
+					ProtectedClaim protectedClaim = (ProtectedClaim) claimable;
+					protectedClaim.setName((String) cmd.getArg(0));
+					sendNotification(owner, new Message("command.claim.name.set", protectedClaim.getName()));
+					return 1;
 				} else {
-					CommandMessage.send(sender, new Message("claim.isnotowned"));
+					cmd.sendFailureMessage(new Message("claim.is_not_protected"));
 					return 0;
 				}
+			} else {
+				cmd.sendFailureMessage(new Message("claim.is_not_owned"));
+				return 0;
 			}
 		});
 	}
 	
 	public static void rule() {
 		for (ClaimRule rule : ClaimRule.values()) {
-			LinkedHashMap<String, Argument> arguments = new LinkedHashMap<>();
-			arguments.put("rule", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
-			arguments.put("protectedClaim", new TextArgument());
-			arguments.put(rule.name(), new LiteralArgument(rule.name()));
-			register(arguments, new ClaimCommandExecutor() {
-				public int run(CommandSender sender, Owner owner, Object[] args) {
-					List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) args[0]);
-					if (!protectedClaims.isEmpty()) {
+			LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
+			arguments.put("rule_literal", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
+			arguments.put("protectedClaim", new QuotedStringArgument());
+			arguments.put("rule", new LiteralArgument(rule.name()));
+			register(arguments, (cmd, owner) -> {
+				List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) cmd.getArg(0));
+				if (!protectedClaims.isEmpty()) {
+					
+					Map<RuleTarget, Boolean> ruleValues = protectedClaims.get(0).getClaimRuleValues(rule);
+					ruleValues.putIfAbsent(RuleTarget.NEUTRALS, false);
+					for (RuleTarget ruleTarget : ruleValues.keySet()) {
+						if (ruleTarget.equals(RuleTarget.NEUTRALS) && !cmd.hasPermission("claim.target.neutrals")) continue;
+						if (ruleTarget instanceof TeamOwner && !cmd.hasPermission("claim.target.team")) continue;
+						if (ruleTarget instanceof EntityOwner && !cmd.hasPermission("claim.target.player")) continue;
 						
-						Map<RuleTarget, Boolean> ruleValues = protectedClaims.get(0).getClaimRuleValues(rule);
-						ruleValues.putIfAbsent(RuleTarget.NEUTRALS, false);
-						ruleValues.putIfAbsent(RuleTarget.ALLIES, false);
-						for (RuleTarget ruleTarget : ruleValues.keySet()) {
-							if (ruleTarget.equals(RuleTarget.NEUTRALS) && !sender.hasPermission("claim.target.neutrals")) continue;
-							if (ruleTarget.equals(RuleTarget.ALLIES) && !sender.hasPermission("claim.target.allies")) continue;
-							if (ruleTarget instanceof TeamOwner && !sender.hasPermission("claim.target.team")) continue;
-							if (ruleTarget instanceof EntityOwner && !sender.hasPermission("claim.target.player")) continue;
-							
-							String id;
-							if (ruleTarget.equals(RuleTarget.NEUTRALS)) id = Translate.getPluginMessage(sender, new Message("neutrals"));
-							else if (ruleTarget.equals(RuleTarget.ALLIES)) id = Translate.getPluginMessage(sender, new Message("allies"));
-							else if (ruleTarget instanceof Owner) id = ((Owner) ruleTarget).getName();
-							else id = ruleTarget.getId();
-							
-							boolean ruleValue = ruleValues.get(ruleTarget);
-							ChatColor color = ruleValue ? ChatColor.GREEN : ChatColor.RED;
-							sender.sendMessage(id + ": " + color + ruleValue);
-						}
-						return 1;
-					} else {
-						CommandMessage.send(sender, new Message("claim.doesnotexist"), (String) args[0]);
-						return 0;
+						String id;
+						if (ruleTarget.equals(RuleTarget.NEUTRALS)) id = new Message("neutrals").getMessage(cmd.getLanguage());
+						else if (ruleTarget instanceof Owner) id = ((Owner) ruleTarget).getName();
+						else id = ruleTarget.getId();
+						
+						boolean ruleValue = ruleValues.get(ruleTarget);
+						ChatColor color = ruleValue ? ChatColor.GREEN : ChatColor.RED;
+						cmd.sendMessage(new TextComponent(id + ": " + color + ruleValue));
 					}
+					return 1;
+				} else {
+					cmd.sendFailureMessage(new Message("claim.does_not_exist", (String) cmd.getArg(0)));
+					return 0;
 				}
 			});
 			
-			for (String string : new String[] {"neutrals", "allies", "team", "player"}) {
+			for (String string : new String[] {"neutrals", "team", "player"}) {
 				arguments = new LinkedHashMap<>();
-				arguments.put("rule", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
-				arguments.put("protectedClaim", new TextArgument());
-				arguments.put(rule.name(), new LiteralArgument(rule.name()));
+				arguments.put("rule_literal", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
+				arguments.put("protectedClaim", new QuotedStringArgument());
+				arguments.put("rule", new LiteralArgument(rule.name()));
 				arguments.put("targetType", new LiteralArgument(string).withPermission(new Permission("claim.target." + string)));
-				if (string.equals("player")) arguments.put("target", offlinePlayers);
-				if (string.equals("team")) arguments.put("target", teams);
+				if (string.equals("player")) arguments.put("target", new OfflinePlayerArgument());
+				if (string.equals("team")) arguments.put("target", new ScoreboardTeamArgument());
 				arguments.put("value", new BooleanArgument());
-				register(arguments, new ClaimCommandExecutor() {
-					public int run(CommandSender sender, Owner owner, Object[] args) {
-						List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) args[0]);
-						if (!protectedClaims.isEmpty()) {
-							RuleTarget target = RuleTarget.getRuleTarget((args.length == 3 ? (String) args[1] : "") + "@" + string.replace("player", "entity"));
-							if (target != null) {
-								for (ProtectedClaim protectedClaim : protectedClaims)
-									protectedClaim.setClaimRuleValue(rule, target, (boolean) args[args.length - 1]);
-								CommandMessage.send(sender, new Message("claimcmd.rule.set"), rule.name(), ""+(boolean) args[args.length - 1]);
-								return 1;
-							} else {
-								if (string.equals("team")) CommandMessage.send(sender, new Message("team.doesnotexist"), (String) args[1]);
-								if (string.equals("player")) CommandMessage.send(sender, new Message("player.doesnotexist"), (String) args[1]);
-								return 0;
-							}
-						} else {
-							CommandMessage.send(sender, new Message("claim.doesnotexist"), (String) args[0]);
-							return 0;
-						}
+				register(arguments, (cmd, owner) -> {
+					List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) cmd.getArg(0));
+					if (!protectedClaims.isEmpty()) {
+						String id;
+						if (string.equals("neutrals")) id = "@neutrals";
+						else if (string.equals("team")) id = ((Team) cmd.getArg(1)).getName() + "@team";
+						else if (string.equals("player")) id = ((OfflinePlayer) cmd.getArg(1)).getUniqueId().toString() + "@entity";
+						else id = null;
+						RuleTarget target = RuleTarget.getRuleTarget(id);
+						boolean value = (boolean) cmd.getArg(string.equals("neutrals") ? 1 : 2);
+						for (ProtectedClaim protectedClaim : protectedClaims)
+							protectedClaim.setClaimRuleValue(rule, target, value);
+						sendNotification(owner, new Message("command.claim.rule.set", rule.name(), ""+value));
+						return 1;
+					} else {
+						cmd.sendFailureMessage(new Message("claim.does_not_exist", (String) cmd.getArg(0)));
+						return 0;
 					}
 				});
 				
 				arguments = new LinkedHashMap<>();
-				arguments.put("rule", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
-				arguments.put("protectedClaim", new TextArgument());
-				arguments.put(rule.name(), new LiteralArgument(rule.name()));
+				arguments.put("rule_literal", new LiteralArgument("rule").withPermission(new Permission("claim.command.claim.rule")));
+				arguments.put("protectedClaim", new QuotedStringArgument());
+				arguments.put("rule", new LiteralArgument(rule.name()));
 				arguments.put("targetType", new LiteralArgument(string));
-				if (string.equals("player")) arguments.put("target", offlinePlayers);
-				if (string.equals("team")) arguments.put("target", teams);
+				if (string.equals("player")) arguments.put("target", new OfflinePlayerArgument());
+				if (string.equals("team")) arguments.put("target", new ScoreboardTeamArgument());
 				arguments.put("remove", new LiteralArgument("remove"));
-				register(arguments, new ClaimCommandExecutor() {
-					public int run(CommandSender sender, Owner owner, Object[] args) {
-						List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) args[0]);
-						if (!protectedClaims.isEmpty()) {
-							RuleTarget target = RuleTarget.getRuleTarget((args.length == 3 ? (String) args[1] : "") + "@" + string.replace("player", "entity"));
-							if (target != null) {
-								for (ProtectedClaim protectedClaim : protectedClaims) protectedClaim.removeClaimRuleValue(rule, target);
-								CommandMessage.send(sender, new Message("claimcmd.rule.remove"), rule.name());
-								return 1;
-							} else {
-								if (string.equals("team")) CommandMessage.send(sender, new Message("team.doesnotexist"), (String) args[1]);
-								if (string.equals("player")) CommandMessage.send(sender, new Message("player.doesnotexist"), (String) args[1]);
-								return 0;
-							}
-						} else {
-							CommandMessage.send(sender, new Message("claim.doesnotexist"), (String) args[0]);
-							return 0;
-						}
+				register(arguments, (cmd, owner) -> {
+					List<ProtectedClaim> protectedClaims = ProtectedClaim.getProtectedClaims(owner, (String) cmd.getArg(0));
+					if (!protectedClaims.isEmpty()) {
+						String id;
+						if (string.equals("neutrals")) id = "@neutrals";
+						else if (string.equals("team")) id = ((Team) cmd.getArg(1)).getName() + "@team";
+						else if (string.equals("player")) id = ((OfflinePlayer) cmd.getArg(1)).getUniqueId().toString() + "@entity";
+						else id = null;
+						RuleTarget target = RuleTarget.getRuleTarget(id);
+						for (ProtectedClaim protectedClaim : protectedClaims) protectedClaim.removeClaimRuleValue(rule, target);
+						sendNotification(owner, new Message("command.claim.rule.remove", rule.name()));
+						return 1;
+					} else {
+						cmd.sendFailureMessage(new Message("claim.does_not_exist", (String) cmd.getArg(0)));
+						return 0;
 					}
 				});
 			}

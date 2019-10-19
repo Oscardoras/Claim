@@ -1,5 +1,6 @@
 name: Claim
 version: "1.0.0"
+api-version: 1.13
 description: "A plugin to own claims and protect them."
 author: oscardoras
 main: org.bukkitplugin.claim.ClaimPlugin
@@ -7,6 +8,51 @@ permissions:
   claim:
     default: op
     children:
+      claim.command: true
       claim.ignore: true
+      claim.target: true
+  claim.command:
+    default: true
+    children:
+      claim.command.claim: true
+      claim.command.team: true
+  claim.command.claim:
+    default: true
+    children:
+      claim.command.claim.list: true
+      claim.command.claim.claim: true
+      claim.command.claim.unclaim: true
+      claim.command.claim.protect: true
+      claim.command.claim.unprotect: true
+      claim.command.claim.name: true
+      claim.command.claim.rule: true
+  claim.command.claim.list:
+    default: true
+  claim.command.claim.claim:
+    default: true
+  claim.command.claim.unclaim:
+    default: true
+  claim.command.claim.protect:
+    default: true
+  claim.command.claim.unprotect:
+    default: true
+  claim.command.claim.name:
+    default: true
+  claim.command.claim.rule:
+    default: true
+  claim.command.team:
+    default: true
   claim.ignore:
     default: op
+  claim.target:
+    default: true
+    children:
+      claim.target.neutrals: true
+      claim.target.team: true
+      claim.target.player: true
+  claim.target.neutrals:
+    default: true
+  claim.target.team:
+    default: true
+  claim.target.player:
+    default: true

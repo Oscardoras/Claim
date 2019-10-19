@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
-import org.bukkitplugin.claim.ClaimPlugin;
+import org.bukkit.scoreboard.Objective;
 
 public class EntityOwner implements Owner {
 	
@@ -62,30 +62,21 @@ public class EntityOwner implements Owner {
 	}
 	
 	@Override
-	public int getMaxPower() {
-		ClaimPlugin.plugin.recalculateScores();
-		return Bukkit.getScoreboardManager().getMainScoreboard().getObjective("maxPower").getScore(entry).getScore();
-	}
-	
-	@Override
 	public int getPower() {
-		ClaimPlugin.plugin.recalculateScores();
-		return Bukkit.getScoreboardManager().getMainScoreboard().getObjective("power").getScore(entry).getScore();
+		Objective objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("power");
+		return objective != null ? objective.getScore(entry).getScore() : 0;
 	}
 	
 	@Override
 	public boolean equals(Object object) {
-		if (object != null) {
-			if (object instanceof EntityOwner) return uuid.equals(((EntityOwner) object).uuid);
-			if (object instanceof Entity) return uuid.equals(((Entity) object).getUniqueId());
-			if (object instanceof OfflinePlayer) return uuid.equals(((OfflinePlayer) object).getUniqueId());
-		}
-		return false;
+		return object != null && object instanceof EntityOwner && uuid.equals(((EntityOwner) object).uuid);
 	}
 	
 	@Override
 	public int hashCode() {
-		return uuid.hashCode();
+		int hash = 1;
+		hash *= 26 + uuid.hashCode();
+		return hash;
 	}
 	
 }

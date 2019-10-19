@@ -1,0 +1,16 @@
+# Configuration for the Claim plugin.
+# coefs:
+# Each possessor has a coefficient between 0 and 1 corresponding to his power divided by his claim number.
+# The coefficients represent the threshold from which the different actions are possible in its protected claims.
+# max_claim_distance: (chunks) The maximum distance at which a claim may be remote from a protected claim.
+# offline_time: (ticks) A player who has not logged in since offline_time ticks will start losing power. Sets 0 to disable this feature.
+
+coefs:
+  burn: 1.0
+  use_buckets: 1.0
+  open_chests: 1.0
+  open_doors: 1.0
+  build: 0.75
+  steal: 0.5
+max_claim_distance: 8
+offline_time: 0

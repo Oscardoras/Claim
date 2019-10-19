@@ -3,21 +3,18 @@ package org.bukkitplugin.claim.claimable;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkitplugin.claim.ClaimPlugin;
 import org.bukkitplugin.claim.owner.Owner;
-import org.bukkitutils.io.DataFile;
+import org.bukkitutils.io.ConfigurationFile;
 
 public class Claimable {
 	
-	protected final DataFile file;
-	protected final YamlConfiguration config;
 	protected final Chunk chunk;
+	protected final ConfigurationFile config;
 	
-	protected Claimable(Chunk chunk, DataFile file, YamlConfiguration config) {
+	protected Claimable(Chunk chunk, ConfigurationFile config) {
 		this.chunk = chunk;
-		this.file = file;
 		this.config = config;
 	}
 	
@@ -33,15 +30,15 @@ public class Claimable {
 		config.set(chunk.getX() + "." + chunk.getZ() + ".owner", owner.getId());
 		config.set(chunk.getX() + "." + chunk.getZ() + ".protected", false);
 		config.set(chunk.getX() + "." + chunk.getZ() + ".claim_rules", null);
-		file.save();
-		return new Claim(chunk, file, config, owner);
+		config.save();
+		return new Claim(chunk, config, owner);
 	}
 	
 	public ProtectedClaim protect(Owner owner) {
 		config.set(chunk.getX() + "." + chunk.getZ() + ".owner", owner.getId());
 		config.set(chunk.getX() + "." + chunk.getZ() + ".protected", true);
 		
-		ProtectedClaim protectedClaim = new ProtectedClaim(chunk, file, config, owner);
+		ProtectedClaim protectedClaim = new ProtectedClaim(chunk, config, owner);
 		
 		String name = null;
 		ConfigurationSection section = null;
@@ -67,8 +64,14 @@ public class Claimable {
 		}
 		config.set(chunk.getX() + "." + chunk.getZ() + ".claim_rules", section);
 			
-		file.save();
+		config.save();
 		return protectedClaim;
+	}
+	
+	protected void unClaim() {
+		config.set(chunk.getX() + "." + chunk.getZ(), null);
+		if (config.getConfigurationSection("" + chunk.getX()).getKeys(false).isEmpty()) config.set("" + chunk.getX(), null);
+		config.save();
 	}
 	
 	public float getCoef() {
@@ -91,7 +94,7 @@ public class Claimable {
 		return true;
 	}
 	
-	public boolean canOpenContainers(Entity entity) {
+	public boolean canOpenChests(Entity entity) {
 		return true;
 	}
 	
@@ -100,50 +103,52 @@ public class Claimable {
 	}
 	
 	public boolean checkClaim(Owner owner) {
+		String id = owner.getId();
+		ConfigurationFile config = new ConfigurationFile(chunk.getWorld().getWorldFolder().getPath() + "/data/claims.yml");
+		
 		int maxClaimDistance = ClaimPlugin.plugin.maxClaimDistance;
-		World world = chunk.getWorld();
 		int chunkX = chunk.getX();
 		int chunkZ = chunk.getZ();
 		int maxX = chunkX + maxClaimDistance;
 		int maxZ = chunkZ + maxClaimDistance;
 		
-		for (int x = chunkX - maxClaimDistance; x < maxX; x++) {
-			for (int z = chunkZ - maxClaimDistance; z < maxZ; z++) {
-				Claimable claimable = Claimable.get(world.getChunkAt(x, z));
-				if (claimable instanceof ProtectedClaim && ((ProtectedClaim) claimable).owner.equals(owner)) return true;
-			}
-		}
+		for (int x = chunkX - maxClaimDistance; x < maxX; x++)
+			for (int z = chunkZ - maxClaimDistance; z < maxZ; z++)
+				if (config.getBoolean(x + "." + z + ".protected", false))
+					if (config.contains(x + "." + z + ".owner") && id.equals(config.getString(x + "." + z + ".owner")))
+						return true;
 		return false;
 	}
 	
 	@Override
 	public boolean equals(Object object) {
-		if (object != null) {
-			if (object instanceof Claimable) return chunk.equals(((Claimable) object).chunk);
-			if (object instanceof Chunk) return chunk.equals(((Chunk) object));
-		}
-		return false;
+		return object != null && object instanceof Claimable && chunk.equals(((Claimable) object).chunk);
 	}
 	
 	@Override
 	public int hashCode() {
-		return chunk.hashCode();
+		int hash = 1;
+		hash *= 14 + chunk.hashCode();
+		return hash;
 	}
 	
 	
 	public static Claimable get(Chunk chunk) {
-		DataFile file = new DataFile(chunk.getWorld().getWorldFolder().getPath() + "/data/claims.yml");
-		YamlConfiguration config = file.getYML();
+		ConfigurationFile config = new ConfigurationFile(chunk.getWorld().getWorldFolder().getPath() + "/data/claims.yml");
 		if (config.contains(chunk.getX() + "." + chunk.getZ() + ".owner")) {
 			Owner owner = Owner.getOwner(config.getString(chunk.getX() + "." + chunk.getZ() + ".owner"));
 			if (owner != null) {
-				if (config.getBoolean(chunk.getX() + "." + chunk.getZ() + ".protected", false)) return new ProtectedClaim(chunk, file, config, owner);
-				Claim claim = new Claim(chunk, file, config, owner);
+				if (config.getBoolean(chunk.getX() + "." + chunk.getZ() + ".protected", false)) return new ProtectedClaim(chunk, config, owner);
+				Claim claim = new Claim(chunk, config, owner);
 				if (claim.checkClaim(owner)) return claim;
 				else claim.unClaim();
+			} else {
+				Claimable claimable = new Claimable(chunk, config);
+				claimable.unClaim();
+				return claimable;
 			}
 		}
-		return new Claimable(chunk, file, config);
+		return new Claimable(chunk, config);
 	}
 	
 }

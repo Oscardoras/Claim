@@ -11,7 +11,7 @@ import org.bukkitplugin.claim.owner.TeamOwner;
 public enum ClaimRule {
     
     build,
-    openContainers,
+    openChests,
     openDoors;
 	
 	
@@ -29,25 +29,21 @@ public enum ClaimRule {
 					if (teamOwner != null) return protectedClaim.getClaimRuleValue(rule, entityOwner);
 					else throw new ClaimRuleNotDefinedException();
 				} catch (ClaimRuleNotDefinedException ex2) {
-					RuleTarget allies = RuleTarget.ALLIES;
 					try {
-						if (protectedClaim.getOwner().getAllies().contains(entityOwner)) return protectedClaim.getClaimRuleValue(rule, allies);
-						else throw new ClaimRuleNotDefinedException();
-					} catch (ClaimRuleNotDefinedException ex3) {
-						try {
-							if (protectedClaim.getOwner().getAllies().contains(teamOwner)) return protectedClaim.getClaimRuleValue(rule, allies);
-							else throw new ClaimRuleNotDefinedException();
-						} catch (ClaimRuleNotDefinedException ex4) {
-							try {
-								return protectedClaim.getClaimRuleValue(rule, RuleTarget.NEUTRALS);
-							} catch (ClaimRuleNotDefinedException ex5) {
-								return false;
-							}
-						}
+						return protectedClaim.getClaimRuleValue(rule, RuleTarget.NEUTRALS);
+					} catch (ClaimRuleNotDefinedException ex5) {
+						return false;
 					}
 				}
 			}
 		} else return true;
+	}
+	
+	
+	public static class ClaimRuleNotDefinedException extends Exception {
+		
+		private static final long serialVersionUID = -1937664540406592744L;
+		
 	}
 	
 }

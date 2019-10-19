@@ -1,9 +1,11 @@
 package org.bukkitplugin.claim;
 
-public class Message extends org.bukkitutils.io.Message {
+import org.bukkitutils.io.TranslatableMessage;
+
+public class Message extends TranslatableMessage {
 	
-	public Message(String path) {
-		super(ClaimPlugin.plugin, path);
+	public Message(String path, String... args) {
+		super(ClaimPlugin.plugin, path, args);
 	}
 	
 }
