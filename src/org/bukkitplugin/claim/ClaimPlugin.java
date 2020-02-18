@@ -66,18 +66,6 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 	public void onEnable() {
 		saveDefaultConfig();
 		
-		if (!getConfig().contains("coefs.burn")) getConfig().set("coefs.burn", 1.0f);
-		if (!getConfig().contains("coefs.use_buckets")) getConfig().set("coefs.use_buckets", 1.0f);
-		if (!getConfig().contains("coefs.open_chests")) getConfig().set("coefs.open_chests", 1.0f);
-		if (!getConfig().contains("coefs.open_doors")) getConfig().set("coefs.open_doors", 1.0f);
-		if (!getConfig().contains("coefs.build")) getConfig().set("coefs.build", 0.75f);
-		if (!getConfig().contains("coefs.steal")) getConfig().set("coefs.steal", 0.5f);
-		
-		if (!getConfig().contains("max_claim_distance")) getConfig().set("max_claim_distance", 8);
-		if (!getConfig().contains("offline_time")) getConfig().set("offline_time", 0);
-		saveConfig();
-		
-		
 		coefs = new Coefs();
 		coefs.burn = (float) getConfig().getDouble("coefs.burn");
 		coefs.useBuckets = (float) getConfig().getDouble("coefs.use_buckets");
