@@ -28,7 +28,6 @@ import org.bukkitplugin.claim.owner.TeamOwner;
 import org.bukkitutils.BukkitPlugin;
 import org.bukkitutils.PlayerReloader;
 import org.bukkitutils.PlayerReloader.Type;
-import org.bukkitutils.io.Notification;
 
 public class ClaimPlugin extends BukkitPlugin implements Listener {
 	
@@ -80,7 +79,6 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 		
 		Bukkit.getPluginManager().registerEvents(this, this);
 		Bukkit.getPluginManager().registerEvents(new Listeners(), this);
-		Notification.register(this);
 		
 		PlayerReloader.register(this, (player, location, type) -> {
 			if (type != Type.QUIT) {
@@ -108,7 +106,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 						}
 						
 						if (!owner.equals(oldOwner) || !name.equals(oldName)) {
-							player.sendTitle(name, new Message("territory.owner").getMessage(player, owner.getName()), 1, 60, 10);
+							player.sendTitle(name, new Message("territory.owner").getMessage(player, owner.getDisplayName()), 1, 60, 10);
 						}
 					} else if (oldClaimable instanceof Claim) player.sendTitle("", new Message("territory.free").getMessage(player), 1, 20, 10);
 				}

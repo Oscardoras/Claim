@@ -11,7 +11,7 @@ public interface RuleTarget {
 
 		@Override
 		public boolean equals(Object object) {
-			return object != null && object instanceof RuleTarget && ((RuleTarget) object).getId().equals(getId());
+			return object == this;
 		}
 		
 		@Override

@@ -60,7 +60,7 @@ public class Claimable {
 		}
 		if (!config.contains(chunk.getX() + "." + chunk.getZ() + ".name")) {
 			if (name != null) protectedClaim.setName(name);
-			else protectedClaim.setName(owner.getName());
+			else protectedClaim.setName(owner.getDisplayName());
 		}
 		config.set(chunk.getX() + "." + chunk.getZ() + ".claim_rules", section);
 			

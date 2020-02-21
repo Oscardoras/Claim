@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -29,7 +28,6 @@ import org.bukkitutils.command.v1_14_3_V1.arguments.BooleanArgument;
 import org.bukkitutils.command.v1_14_3_V1.arguments.OfflinePlayerArgument;
 import org.bukkitutils.command.v1_14_3_V1.arguments.QuotedStringArgument;
 import org.bukkitutils.command.v1_14_3_V1.arguments.ScoreboardTeamArgument;
-import org.bukkitutils.io.Notification;
 
 import net.md_5.bungee.api.chat.TextComponent;
 
@@ -55,18 +53,6 @@ public final class ClaimCommand {
 		});
 	}
 	
-	public static void sendNotification(Owner owner, Message message, String... args) {
-		if (owner instanceof EntityOwner) sendNotification((EntityOwner) owner, message, args);
-		else if (owner instanceof TeamOwner) Notification.send(((TeamOwner) owner).getTeam(), message, args);
-	}
-	
-	private static void sendNotification(EntityOwner owner, Message message, String... args) {
-		UUID uuid = ((EntityOwner) owner).getUUID();
-		Entity entity = Bukkit.getEntity(uuid);
-		if (entity != null) entity.sendMessage(message.getMessage(entity, args));
-		else Notification.send(Bukkit.getOfflinePlayer(uuid), message, args);
-	}
-	
 	
 	public static void list() {
 		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
@@ -90,7 +76,7 @@ public final class ClaimCommand {
 			if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
 				if (claimable.checkClaim(owner)) {
 					claimable.claim(owner);
-					sendNotification(owner, new Message("command.claim.claim"));
+					cmd.sendMessage(new Message("command.claim.claim"));
 					return 1;
 				} else {
 					cmd.sendFailureMessage(new Message("claim.is_too_far"));
@@ -99,7 +85,7 @@ public final class ClaimCommand {
 			} else if (((Claim) claimable).canBeStolen() || cmd.hasPermission("claim.ignore")) {
 				if (claimable.checkClaim(owner)) {
 					claimable.claim(owner);
-					sendNotification(owner, new Message("command.claim.steal"));
+					cmd.sendMessage(new Message("command.claim.steal"));
 					return 1;
 				} else {
 					cmd.sendFailureMessage(new Message("claim.is_too_far"));
@@ -121,11 +107,11 @@ public final class ClaimCommand {
 				Claim claim = (Claim) claimable;
 				if (owner.equals(claim.getOwner())) {
 					claim.unClaim();
-					sendNotification(owner, new Message("command.claim.unclaim"));
+					cmd.sendMessage(new Message("command.claim.unclaim"));
 					return 1;
 				} else if (claim.canBeStolen() || cmd.hasPermission("claim.ignore")) {
 					claim.unClaim();
-					sendNotification(owner, new Message("command.claim.steal"));
+					cmd.sendMessage(new Message("command.claim.steal"));
 					return 1;
 				} else {
 					cmd.sendFailureMessage(new Message("claim.can_not_be_stolen"));
@@ -145,11 +131,11 @@ public final class ClaimCommand {
 			Claimable claimable = Claimable.get(cmd.getLocation().getChunk());
 			if (!(claimable instanceof Claim) || owner.equals(((Claim) claimable).getOwner())) {
 				claimable.protect(owner);
-				sendNotification(owner, new Message("command.claim.protect"));
+				cmd.sendMessage(new Message("command.claim.protect"));
 				return 1;
 			} else if (((Claim) claimable).canBeStolen() || cmd.hasPermission("claim.ignore")) {
 				claimable.protect(owner);
-				sendNotification(owner, new Message("command.claim.steal"));
+				cmd.sendMessage(new Message("command.claim.steal"));
 				return 1;
 			} else {
 				cmd.sendFailureMessage(new Message("claim.can_not_be_stolen"));
@@ -166,7 +152,7 @@ public final class ClaimCommand {
 			if (claimable instanceof Claim && owner.equals(((Claim) claimable).getOwner())) {
 				if (claimable instanceof ProtectedClaim) {
 					((ProtectedClaim) claimable).unProtect();
-					sendNotification(owner, new Message("command.claim.unprotect"));
+					cmd.sendMessage(new Message("command.claim.unprotect"));
 					return 1;
 				} else {
 					cmd.sendFailureMessage(new Message("claim.is_not_protected"));
@@ -207,7 +193,7 @@ public final class ClaimCommand {
 				if (claimable instanceof ProtectedClaim) {
 					ProtectedClaim protectedClaim = (ProtectedClaim) claimable;
 					protectedClaim.setName((String) cmd.getArg(0));
-					sendNotification(owner, new Message("command.claim.name.set", protectedClaim.getName()));
+					cmd.sendMessage(new Message("command.claim.name.set", protectedClaim.getName()));
 					return 1;
 				} else {
 					cmd.sendFailureMessage(new Message("claim.is_not_protected"));
@@ -239,7 +225,7 @@ public final class ClaimCommand {
 						
 						String id;
 						if (ruleTarget.equals(RuleTarget.NEUTRALS)) id = new Message("neutrals").getMessage(cmd.getLanguage());
-						else if (ruleTarget instanceof Owner) id = ((Owner) ruleTarget).getName();
+						else if (ruleTarget instanceof Owner) id = ((Owner) ruleTarget).getDisplayName();
 						else id = ruleTarget.getId();
 						
 						boolean ruleValue = ruleValues.get(ruleTarget);
@@ -274,7 +260,7 @@ public final class ClaimCommand {
 						boolean value = (boolean) cmd.getArg(string.equals("neutrals") ? 1 : 2);
 						for (ProtectedClaim protectedClaim : protectedClaims)
 							protectedClaim.setClaimRuleValue(rule, target, value);
-						sendNotification(owner, new Message("command.claim.rule.set", rule.name(), ""+value));
+						cmd.sendMessage(new Message("command.claim.rule.set", rule.name(), ""+value));
 						return 1;
 					} else {
 						cmd.sendFailureMessage(new Message("claim.does_not_exist", (String) cmd.getArg(0)));
@@ -300,7 +286,7 @@ public final class ClaimCommand {
 						else id = null;
 						RuleTarget target = RuleTarget.getRuleTarget(id);
 						for (ProtectedClaim protectedClaim : protectedClaims) protectedClaim.removeClaimRuleValue(rule, target);
-						sendNotification(owner, new Message("command.claim.rule.remove", rule.name()));
+						cmd.sendMessage(new Message("command.claim.rule.remove", rule.name()));
 						return 1;
 					} else {
 						cmd.sendFailureMessage(new Message("claim.does_not_exist", (String) cmd.getArg(0)));

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.scoreboard.Team;
 import org.bukkitplugin.claim.claimable.ProtectedClaim;
@@ -13,7 +12,7 @@ import org.bukkitplugin.claim.rule.RuleTarget;
 
 public interface Owner extends RuleTarget {
 	
-	public String getName();
+	public String getDisplayName();
 	
 	public int getPower();
 	
@@ -47,8 +46,6 @@ public interface Owner extends RuleTarget {
 					UUID uuid = UUID.fromString(elements[0]);
 					Entity entity = Bukkit.getEntity(uuid);
 					if (entity != null) return new EntityOwner(entity);
-					OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-					if (offlinePlayer.getName() != null) return new EntityOwner(offlinePlayer);
 				} catch (IllegalArgumentException ex) {}
 				return new EntityOwner(Bukkit.getOfflinePlayer(elements[0]));
 			} else if (type.equals("team")) {

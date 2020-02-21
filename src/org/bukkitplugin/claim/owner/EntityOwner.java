@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 
 public class EntityOwner implements Owner {
@@ -26,7 +27,8 @@ public class EntityOwner implements Owner {
 	
 	public EntityOwner(Entity entity) {
 		this.uuid = entity.getUniqueId();
-		this.entry = entity.getName();
+		if (entity instanceof Player) this.entry = entity.getName();
+		else this.entry = uuid.toString();
 	}
 	
 	public EntityOwner(OfflinePlayer offlinePlayer) {
@@ -52,13 +54,13 @@ public class EntityOwner implements Owner {
 	}
 	
 	@Override
-	public String getName() {
+	public String getDisplayName() {
 		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
 		String name = offlinePlayer.getName();
 		if (name != null) return name;
 		Entity entity = Bukkit.getEntity(uuid);
 		if (entity != null) return entity.getCustomName();
-		return uuid.toString();
+		return entry;
 	}
 	
 	@Override
