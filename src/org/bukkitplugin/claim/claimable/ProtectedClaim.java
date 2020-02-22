@@ -28,6 +28,8 @@ public class ProtectedClaim extends Claim {
 		config.set(chunk.getX() + "." + chunk.getZ() + ".name", null);
 		config.set(chunk.getX() + "." + chunk.getZ() + ".claim_rules", null);
 		config.save();
+		
+		owner.reloadClaimLength();
 	}
 	
 	public String getName() {
@@ -148,7 +150,7 @@ public class ProtectedClaim extends Claim {
 	
 	public static List<ProtectedClaim> getProtectedClaims(World world) {
 		List<ProtectedClaim> protectedClaims = new ArrayList<ProtectedClaim>();
-		ConfigurationFile config = new ConfigurationFile(world.getWorldFolder().getPath() + "/data/claims.yml");
+		ConfigurationFile config = getConfig(world);
 		for (String x : config.getConfigurationSection("").getKeys(false)) {
 			for (String z : config.getConfigurationSection(x).getKeys(false)) {
 				Claimable claimable = Claimable.get((world.getChunkAt(Integer.parseInt(x), Integer.parseInt(z))));
@@ -168,7 +170,7 @@ public class ProtectedClaim extends Claim {
 		String id = owner.getId();
 		int length = 0;
 		for (World world : Bukkit.getWorlds()) {
-			ConfigurationFile config = new ConfigurationFile(world.getWorldFolder().getPath() + "/data/claims.yml");
+			ConfigurationFile config = getConfig(world);
 			for (String x : config.getConfigurationSection("").getKeys(false))
 				for (String z : config.getConfigurationSection(x).getKeys(false)) {
 					ConfigurationSection section = config.getConfigurationSection(x + "." + z);

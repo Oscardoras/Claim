@@ -1,5 +1,8 @@
 package org.bukkitplugin.claim.claimable;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -9,6 +12,8 @@ import org.bukkitplugin.claim.owner.Owner;
 import org.bukkitutils.io.ConfigurationFile;
 
 public class Claimable {
+	
+	protected static final Map<World, ConfigurationFile> configs = new HashMap<World, ConfigurationFile>();
 	
 	protected final Chunk chunk;
 	protected final ConfigurationFile config;
@@ -65,6 +70,8 @@ public class Claimable {
 		config.set(chunk.getX() + "." + chunk.getZ() + ".claim_rules", section);
 			
 		config.save();
+		
+		owner.reloadClaimLength();
 		return protectedClaim;
 	}
 	
@@ -104,7 +111,7 @@ public class Claimable {
 	
 	public boolean checkClaim(Owner owner) {
 		String id = owner.getId();
-		ConfigurationFile config = new ConfigurationFile(chunk.getWorld().getWorldFolder().getPath() + "/data/claims.yml");
+		ConfigurationFile config = getConfig(chunk.getWorld());
 		
 		int maxClaimDistance = ClaimPlugin.plugin.maxClaimDistance;
 		int chunkX = chunk.getX();
@@ -134,7 +141,7 @@ public class Claimable {
 	
 	
 	public static Claimable get(Chunk chunk) {
-		ConfigurationFile config = new ConfigurationFile(chunk.getWorld().getWorldFolder().getPath() + "/data/claims.yml");
+		ConfigurationFile config = getConfig(chunk.getWorld());
 		if (config.contains(chunk.getX() + "." + chunk.getZ() + ".owner")) {
 			Owner owner = Owner.getOwner(config.getString(chunk.getX() + "." + chunk.getZ() + ".owner"));
 			if (owner != null) {
@@ -149,6 +156,15 @@ public class Claimable {
 			}
 		}
 		return new Claimable(chunk, config);
+	}
+	
+	protected static ConfigurationFile getConfig(World world) {
+		if (configs.containsKey(world)) return configs.get(world);
+		else {
+			ConfigurationFile config = new ConfigurationFile(world.getWorldFolder().getPath() + "/data/claims.yml");
+			configs.put(world, config);
+			return config;
+		}
 	}
 	
 }

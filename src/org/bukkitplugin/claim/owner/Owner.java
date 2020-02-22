@@ -16,6 +16,8 @@ public interface Owner extends RuleTarget {
 	
 	public int getPower();
 	
+	public void reloadClaimLength();
+	
 	default List<ProtectedClaim> getProtectedClaims() {
 		List<ProtectedClaim> claims = new ArrayList<ProtectedClaim>();
 		for (ProtectedClaim claim : ProtectedClaim.getProtectedClaims()) if (this.equals(claim.getOwner())) claims.add(claim);
@@ -27,7 +29,7 @@ public interface Owner extends RuleTarget {
 	}
 	
 	default float getCoef() {
-		int claims = getProtectedClaims().size();
+		int claims = getProtectedClaimsLength();
 		int power = getPower();
 		float coef = claims != 0f ? (float) power / claims : power;
 		if (coef < 0f) coef = 0f;

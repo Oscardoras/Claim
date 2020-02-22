@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 public class TeamOwner implements Owner {
@@ -34,6 +35,17 @@ public class TeamOwner implements Owner {
 		Objective objective = Bukkit.getScoreboardManager().getMainScoreboard().getObjective("power");
 		if (objective != null) for (String entry : team.getEntries()) power += objective.getScore(entry).getScore();
 		return power;
+	}
+	
+	@Override
+	public void reloadClaimLength() {
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		Objective tProtectedClaims = scoreboard.getObjective("tProtectedClaims");
+		if (tProtectedClaims == null) tProtectedClaims = scoreboard.registerNewObjective("tProtectedClaims", "dummy", "Team protected claims");
+		
+		int length = getProtectedClaimsLength();
+		for (String entry : team.getEntries())
+			tProtectedClaims.getScore(entry).setScore(length);
 	}
 	
 	@Override

@@ -3,6 +3,7 @@ package org.bukkitplugin.claim;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -127,6 +128,22 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 			if (tPower == null) tPower = scoreboard.registerNewObjective("tPower", "dummy", "Team power");
 			if (tProtectedClaims == null) tProtectedClaims = scoreboard.registerNewObjective("tProtectedClaims", "dummy", "Team protected claims");
 			
+			for (Team team : scoreboard.getTeams()) {
+				int p = 0;
+				Set<String> entries = team.getEntries();
+				if (!entries.isEmpty()) {
+					int l = new TeamOwner(team).getProtectedClaimsLength();
+					for (String entry : entries) {
+						int s = power.getScore(entry).getScore();
+						if (s > 0) p += s;
+					}
+					for (String entry : entries) {
+						tPower.getScore(entry).setScore(p);
+						tProtectedClaims.getScore(entry).setScore(l);
+					}
+				}
+			}
+			
 			if (offlineTime > 0) {
 				Objective claimOfflineTime = scoreboard.getObjective("claimOfflineTime");
 				if (claimOfflineTime == null) claimOfflineTime = scoreboard.registerNewObjective("claimOfflineTime", "dummy", "claimOfflineTime");
@@ -149,36 +166,6 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 					}
 				}
 			}
-			
-			for (String entry : scoreboard.getEntries()) protectedClaims.getScore(entry).setScore(new EntityOwner(entry).getProtectedClaimsLength());
-			
-			class Scores {
-				public int power;
-				public int protectedClaims;
-			}
-			Map<Team, Scores> scores = new HashMap<Team, Scores>();
-			for (Team team : scoreboard.getTeams()) {
-				TeamOwner teamOwner = new TeamOwner(team);
-				Scores score = new Scores();
-				score.power = teamOwner.getPower();
-				score.protectedClaims = teamOwner.getProtectedClaimsLength();
-				scores.put(team, score);
-			}
-			
-			for (String entry : scoreboard.getEntries()) {
-				Team team = scoreboard.getEntryTeam(entry);
-				if (team != null) {
-					Scores score = scores.get(team);
-					tPower.getScore(entry).setScore(score.power);
-					tProtectedClaims.getScore(entry).setScore(score.protectedClaims);
-				} else {
-					Score score = tPower.getScore(entry);
-					if (score.isScoreSet()) score.setScore(0);
-					
-					score = tProtectedClaims.getScore(entry);
-					if (score.isScoreSet()) score.setScore(0);
-				}
-			}
 		}, 0l, 20l);
 		
 		new Timer().schedule(new TimerTask() {
@@ -193,6 +180,10 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 			    }
 			}
 		}, 0L, 50L);
+		
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		for (String entry : scoreboard.getEntries()) new EntityOwner(entry).reloadClaimLength();
+		for (Team team : scoreboard.getTeams()) new TeamOwner(team).reloadClaimLength();
 	}
 	
 	@EventHandler

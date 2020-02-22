@@ -34,9 +34,9 @@ public class Claim extends Claimable {
 	}
 	
 	public void unClaim() {
-		config.set(chunk.getX() + "." + chunk.getZ(), null);
-		if (config.getConfigurationSection("" + chunk.getX()).getKeys(false).isEmpty()) config.set("" + chunk.getX(), null);
-		config.save();
+		super.unClaim();
+		
+		owner.reloadClaimLength();
 	}
 	
 	@Override
@@ -51,7 +51,7 @@ public class Claim extends Claimable {
 	
 	public static List<Claim> getClaims(World world) {
 		List<Claim> claims = new ArrayList<Claim>();
-		ConfigurationFile config = new ConfigurationFile(world.getWorldFolder().getPath() + "/data/claims.yml");
+		ConfigurationFile config = getConfig(world);
 		for (String x : config.getConfigurationSection("").getKeys(false)) {
 			for (String z : config.getConfigurationSection(x).getKeys(false)) {
 				Claimable claimable = Claimable.get((world.getChunkAt(Integer.parseInt(x), Integer.parseInt(z))));
