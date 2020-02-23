@@ -1,6 +1,8 @@
 package org.bukkitplugin.claim;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -128,6 +130,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 			if (tPower == null) tPower = scoreboard.registerNewObjective("tPower", "dummy", "Team power");
 			if (tProtectedClaims == null) tProtectedClaims = scoreboard.registerNewObjective("tProtectedClaims", "dummy", "Team protected claims");
 			
+			List<String> e = new ArrayList<String>();
 			for (Team team : scoreboard.getTeams()) {
 				int p = 0;
 				Set<String> entries = team.getEntries();
@@ -141,6 +144,15 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 						tPower.getScore(entry).setScore(p);
 						tProtectedClaims.getScore(entry).setScore(l);
 					}
+				}
+				e.addAll(entries);
+			}
+			for (String entry : scoreboard.getEntries()) {
+				if (!e.contains(entry)) {
+					Score tPowerScore = tPower.getScore(entry);
+					if (tPowerScore.isScoreSet()) tPowerScore.setScore(0);
+					Score tProtectedClaimsScore = tProtectedClaims.getScore(entry);
+					if (tProtectedClaimsScore.isScoreSet()) tProtectedClaimsScore.setScore(0);
 				}
 			}
 			
