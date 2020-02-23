@@ -58,7 +58,7 @@ public final class ClaimCommand {
 		LinkedHashMap<String, Argument<?>> arguments = new LinkedHashMap<>();
 		arguments.put("list", new LiteralArgument("list").withPermission(new Permission("claim.command.claim.list")));
 		register(arguments, (cmd, owner) -> {
-			ArrayList<String> list = new ArrayList<String>();
+			List<String> list = new ArrayList<String>();
 			for (ProtectedClaim protectedClaim : owner.getProtectedClaims()) {
 				String name = protectedClaim.getName();
 				if (!list.contains(name)) list.add(name);
