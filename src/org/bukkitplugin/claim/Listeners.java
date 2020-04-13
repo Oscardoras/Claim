@@ -3,6 +3,7 @@ package org.bukkitplugin.claim;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -35,17 +36,11 @@ import org.bukkitplugin.claim.claimable.Claimable;
 public class Listeners implements Listener {
 	
 	public static boolean isChest(Material material) {
-		List<Material> materials = new ArrayList<Material>();
-		materials.add(Material.CHEST);
-		materials.add(Material.DISPENSER);
-		materials.add(Material.DROPPER);
-		if (materials.contains(material)) return true;
-		if (material.name().contains("SHULKER_BOX")) return true;
-		return false;
+		return material == Material.CHEST;
 	}
 	
 	public static boolean isDoor(Material material) {
-		return material.name().contains("DOOR");
+		return material.name().toLowerCase().endsWith("_door");
 	}
 	
 	@EventHandler(priority = EventPriority.LOW)
@@ -109,13 +104,13 @@ public class Listeners implements Listener {
 	
 	@EventHandler(priority = EventPriority.LOW)
 	public void on(PlayerInteractEvent e) {
-		if (e.hasBlock()) {
+		Player player = e.getPlayer();
+		if (player.getGameMode() != GameMode.SPECTATOR && e.hasBlock()) {
 			Block block = e.getClickedBlock();
 			Material material = block.getType();
 			boolean isChest = isChest(material);
 			boolean isDoor = isDoor(material);
 			if (isChest || isDoor) {
-				Player player = e.getPlayer();
 				Claimable claimable = Claimable.get(block.getChunk());
 				if (isChest && !claimable.canOpenChests(player)) e.setCancelled(true);
 				else if (isDoor && !claimable.canOpenDoors(player)) e.setCancelled(true);
@@ -123,7 +118,7 @@ public class Listeners implements Listener {
 			if (e.hasItem()) {
 				Material type = e.getItem().getType();
 				if (type == Material.ITEM_FRAME || type == Material.ARMOR_STAND)
-					if (!Claimable.get(e.getClickedBlock().getChunk()).canBuild(e.getPlayer())) e.setCancelled(true);
+					if (!Claimable.get(block.getChunk()).canBuild(e.getPlayer())) e.setCancelled(true);
 			}
 		}
 	}
@@ -176,7 +171,7 @@ public class Listeners implements Listener {
 			Player player = e.getPlayer();
 			boolean canBuild = false;
 			if (player == null || (canBuild = !claimable.canBuild(player)))
-				if (e.getCause() != IgniteCause.FLINT_AND_STEEL || !canBuild) e.setCancelled(true);
+				if (e.getCause() != IgniteCause.FLINT_AND_STEEL || canBuild) e.setCancelled(true);
 		}
 	}
 	

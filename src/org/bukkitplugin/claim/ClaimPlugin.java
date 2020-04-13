@@ -12,9 +12,11 @@ import java.util.TimerTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scoreboard.Objective;
@@ -109,7 +111,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 						}
 						
 						if (!owner.equals(oldOwner) || !name.equals(oldName)) {
-							player.sendTitle(name, new Message("territory.owner").getMessage(player, owner.getDisplayName()), 1, 60, 10);
+							player.sendTitle(name, new Message("territory.owner", owner.getDisplayName()).getMessage(player), 1, 60, 10);
 						}
 					} else if (oldClaimable instanceof Claim) player.sendTitle("", new Message("territory.free").getMessage(player), 1, 20, 10);
 				}
@@ -196,6 +198,13 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 		for (String entry : scoreboard.getEntries()) new EntityOwner(entry).reloadClaimLength();
 		for (Team team : scoreboard.getTeams()) new TeamOwner(team).reloadClaimLength();
+	}
+	
+	@EventHandler
+	public void onEntityDeath(EntityDeathEvent e) {
+		Entity entity = e.getEntity();
+		Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(new EntityOwner(entity).getEntry());
+		if (team != null && team.getEntries().size() <= 1) team.unregister();
 	}
 	
 	@EventHandler
