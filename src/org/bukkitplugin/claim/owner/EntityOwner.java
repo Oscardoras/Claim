@@ -18,8 +18,7 @@ public class EntityOwner implements Owner {
 	public EntityOwner(String entry) {
 		UUID uuid = null;
 		try {
-			Entity entity = Bukkit.getEntity(UUID.fromString(entry));
-			if (entity != null) uuid = entity.getUniqueId();
+			uuid = UUID.fromString(entry);
 		} catch (IllegalArgumentException ex) {}
 		if (uuid == null) uuid = Bukkit.getOfflinePlayer(entry).getUniqueId();
 		this.uuid = uuid;
