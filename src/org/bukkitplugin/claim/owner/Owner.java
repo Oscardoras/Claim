@@ -48,6 +48,7 @@ public interface Owner extends RuleTarget {
 					UUID uuid = UUID.fromString(elements[0]);
 					Entity entity = Bukkit.getEntity(uuid);
 					if (entity != null) return new EntityOwner(entity);
+					else return new EntityOwner(Bukkit.getOfflinePlayer(uuid));
 				} catch (IllegalArgumentException ex) {}
 				return new EntityOwner(Bukkit.getOfflinePlayer(elements[0]));
 			} else if (type.equals("team")) {

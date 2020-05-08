@@ -33,7 +33,8 @@ public class EntityOwner implements Owner {
 	
 	public EntityOwner(OfflinePlayer offlinePlayer) {
 		this.uuid = offlinePlayer.getUniqueId();
-		this.entry = offlinePlayer.getName();
+		String name = offlinePlayer.getName();
+		this.entry = name != null ? name : this.uuid.toString();
 	}
 	
 	public String getEntry() {
@@ -59,7 +60,11 @@ public class EntityOwner implements Owner {
 		String name = offlinePlayer.getName();
 		if (name != null) return name;
 		Entity entity = Bukkit.getEntity(uuid);
-		if (entity != null) return entity.getCustomName();
+		if (entity != null) {
+			String customName = entity.getCustomName();
+			if (customName != null) return customName;
+			else return entity.getName();
+		}
 		return entry;
 	}
 	

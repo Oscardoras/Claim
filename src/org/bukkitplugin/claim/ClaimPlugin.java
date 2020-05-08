@@ -12,11 +12,9 @@ import java.util.TimerTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scoreboard.Objective;
@@ -167,16 +165,19 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 						String name = entry.getKey().getName();
 						int value = entry.getValue();
 						Score score = claimOfflineTime.getScore(name);
-						if (value > 0) {
-							int s = score.getScore();
-							score.setScore(s + value);
-							if (value >= offlineTime) {
-								score.setScore(value - offlineTime);
+						
+						if (value == -1) {
+							if (score.getScore() != 0) score.setScore(0);
+						} else {
+							int s = score.getScore() + value;
+							if (s >= offlineTime) {
+								score.setScore(s - offlineTime);
 								Score powerScore = power.getScore(name);
 								int powerValue = powerScore.getScore();
 								if (powerValue > 0) powerScore.setScore(powerValue - 1);
-							}
-						} else score.setScore(0);
+							} else score.setScore(s);
+							entry.setValue(0);
+						}
 					}
 				}
 			}
@@ -189,7 +190,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 						if (!offlinePlayer.isOnline()) {
 							int value = toRemove.containsKey(offlinePlayer) ? toRemove.get(offlinePlayer) : 0;
 							toRemove.put(offlinePlayer, value + 1);
-						} else toRemove.put(offlinePlayer, 0);
+						} else toRemove.put(offlinePlayer, -1);
 					}
 			    }
 			}
@@ -198,13 +199,6 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 		for (String entry : scoreboard.getEntries()) new EntityOwner(entry).reloadClaimLength();
 		for (Team team : scoreboard.getTeams()) new TeamOwner(team).reloadClaimLength();
-	}
-	
-	@EventHandler
-	public void onEntityDeath(EntityDeathEvent e) {
-		Entity entity = e.getEntity();
-		Team team = Bukkit.getScoreboardManager().getMainScoreboard().getEntryTeam(new EntityOwner(entity).getEntry());
-		if (team != null && team.getEntries().size() <= 1) team.unregister();
 	}
 	
 	@EventHandler
