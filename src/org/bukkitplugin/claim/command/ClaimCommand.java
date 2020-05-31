@@ -20,14 +20,14 @@ import org.bukkitplugin.claim.owner.Owner;
 import org.bukkitplugin.claim.owner.TeamOwner;
 import org.bukkitplugin.claim.rule.ClaimRule;
 import org.bukkitplugin.claim.rule.RuleTarget;
-import org.bukkitutils.command.v1_14_3_V1.Argument;
-import org.bukkitutils.command.v1_14_3_V1.CommandRegister;
-import org.bukkitutils.command.v1_14_3_V1.CommandRegister.CommandExecutorType;
-import org.bukkitutils.command.v1_14_3_V1.LiteralArgument;
-import org.bukkitutils.command.v1_14_3_V1.arguments.BooleanArgument;
-import org.bukkitutils.command.v1_14_3_V1.arguments.OfflinePlayerArgument;
-import org.bukkitutils.command.v1_14_3_V1.arguments.QuotedStringArgument;
-import org.bukkitutils.command.v1_14_3_V1.arguments.ScoreboardTeamArgument;
+import org.bukkitutils.command.v1_15_V1.Argument;
+import org.bukkitutils.command.v1_15_V1.CommandRegister;
+import org.bukkitutils.command.v1_15_V1.LiteralArgument;
+import org.bukkitutils.command.v1_15_V1.CommandRegister.CommandExecutorType;
+import org.bukkitutils.command.v1_15_V1.arguments.BooleanArgument;
+import org.bukkitutils.command.v1_15_V1.arguments.OfflinePlayerArgument;
+import org.bukkitutils.command.v1_15_V1.arguments.QuotedStringArgument;
+import org.bukkitutils.command.v1_15_V1.arguments.ScoreboardTeamArgument;
 
 import net.md_5.bungee.api.chat.TextComponent;
 

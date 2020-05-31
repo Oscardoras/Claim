@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
@@ -16,19 +15,19 @@ public class EntityOwner implements Owner {
 	
 	@SuppressWarnings("deprecation")
 	public EntityOwner(String entry) {
-		UUID uuid = null;
+		UUID uuid;
 		try {
 			uuid = UUID.fromString(entry);
-		} catch (IllegalArgumentException ex) {}
-		if (uuid == null) uuid = Bukkit.getOfflinePlayer(entry).getUniqueId();
+		} catch (IllegalArgumentException e) {
+			uuid = Bukkit.getOfflinePlayer(entry).getUniqueId();
+		}
 		this.uuid = uuid;
 		this.entry = entry;
 	}
 	
 	public EntityOwner(Entity entity) {
 		this.uuid = entity.getUniqueId();
-		if (entity instanceof Player) this.entry = entity.getName();
-		else this.entry = uuid.toString();
+		this.entry = entity.getName();
 	}
 	
 	public EntityOwner(OfflinePlayer offlinePlayer) {

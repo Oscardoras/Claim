@@ -55,6 +55,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 	protected final Map<Player, Chunk> playersChunks = new HashMap<Player, Chunk>();
 	private final Map<OfflinePlayer, Integer> toRemove = new HashMap<OfflinePlayer, Integer>();
 	
+	@Override
 	public void onLoad() {
 		ClaimCommand.list();
 		ClaimCommand.claim();
@@ -65,6 +66,7 @@ public class ClaimPlugin extends BukkitPlugin implements Listener {
 		ClaimCommand.rule();
 	}
 	
+	@Override
 	public void onEnable() {
 		saveDefaultConfig();
 		
