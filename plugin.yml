@@ -3,7 +3,7 @@ version: "1.0.0"
 api-version: 1.13
 description: "A plugin to own claims and protect them."
 author: oscardoras
-main: org.bukkitplugin.claim.ClaimPlugin
+main: me.oscardoras.claim.ClaimPlugin
 permissions:
   claim:
     default: op
